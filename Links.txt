@@ -1,2 +1,5 @@
 https://www.sciencedirect.com/science/article/pii/S1877050917309626?via%3Dihub
 https://link-springer-com.libproxy.mst.edu/article/10.1007%2Fs11277-019-06606-5
+https://dl-acm-org.libproxy.mst.edu/doi/abs/10.1145/2638404.2638489
+https://dl-acm-org.libproxy.mst.edu/doi/abs/10.1145/2387191.2387194
+https://ieeexplore-ieee-org.libproxy.mst.edu/document/6855024
