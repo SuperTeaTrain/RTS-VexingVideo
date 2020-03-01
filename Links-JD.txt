@@ -163,12 +163,21 @@ Container file:
    in either seconds or hours, minutes, and seconds. The part right of
    the decimal point measures fractions of a second.
 
+14.
 
+Link: https://ieeexplore-ieee-org.libproxy.mst.edu/abstract/document/629366
 
+H. Schulzrinne, "A comprehensive multimedia control architecture for the Internet," Proceedings of 7th International Workshop on Network and Operating System Support for Digital Audio and Video (NOSSDAV '97), St. Louis, MO, USA, 1997, pp. 65-76.
 
+https://doi-org.libproxy.mst.edu/10.1109/NOSDAV.1997.629366
 
+15.
 
+Link: https://ieeexplore-ieee-org.libproxy.mst.edu/document/780801
 
+F. Rousseau and A. Duda, "Streaming support in an advanced multimedia infrastructure for the WWW," Proceedings IEEE International Symposium on Computers and Communications (Cat. No.PR00250), Red Sea, Egypt, 1999, pp. 173-179.
+
+https://doi-org.libproxy.mst.edu/10.1109/ISCC.1999.780801
 
 
 
