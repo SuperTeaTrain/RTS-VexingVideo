@@ -35,9 +35,7 @@ Doowon Kim, Jinsuk Baek, and Paul S. Fisher. 2014. Adaptive video streaming over
 
 “Traditionally, RTSP (Real-Time Streaming Protocol)/RTP (Real-time Transport Protocol) [2] or RTMP (Real-Time Message Protocol) [3] is used for video stream delivery. The RTSP uses port 554 by default, which is usually blocked by firewalls. Thus, a user using NAT or a firewall cannot use this protocol unless the port is opened. The RTMP is a proprietary protocol so that its usage can be restricted because it requires more cost to deploy and maintain a streaming server for these protocols comparing to a HTTP web server using Apache.”
 
-“All mentioned schemes have two things in common; (1) they use the MPEG-4 H.264 codec, and (2) they switch the quality of streams based CPU usages and the bandwidth of the client. In order to provide better video quality over the existing schemes, the proposed scheme requires the client to send feedback of its current information to the streaming server because the streaming
-server is not able to know the information, but only the
-downloading speeds of video files.”
+“All mentioned schemes have two things in common; (1) they use the MPEG-4 H.264 codec, and (2) they switch the quality of streams based CPU usages and the bandwidth of the client. In order to provide better video quality over the existing schemes, the proposed scheme requires the client to send feedback of its current information to the streaming server because the streaming server is not able to know the information, but only the downloading speeds of video files.”
 
 4.
 
@@ -117,21 +115,63 @@ F. Zheng et al., "Minimizing latency for augmented reality displays: Frames cons
 
 11.
 
-https://ieeexplore-ieee-org.libproxy.mst.edu/document/5497499
+Link: https://ieeexplore-ieee-org.libproxy.mst.edu/document/5497499
 
 Z. Ying-hui and T. Ai-ping, "Caching algorithm for streaming media on P2P network," 2010 2nd International Conference on Future Computer and Communication, Wuha, 2010, pp. V3-573-V3-576.
 
 “P2P network has played an important role in the distribution of large data flow of streaming media in application The bandwidth of network and disk I/O is the main bottleneck to the transferring of real-time streaming media. Data caching technology is widely used in the area as a useful method to solve the problem. This paper proposed a streaming media caching algorithm based on peer to peer network, using the node’s access rate during the certain period of time to choose the caching node, at the same time it determine the size of data caching buffer according to the network’s bandwidth and node’s I/O bandwidth. The experimental results show that this algorithm is much better than other caching algorithm in the merit of reducing network load, reducing data delays and lower caching buffer.”
 
-“This paper proposed a local caching algorithm based on the resource’s access rate, choosing the nodes with high access rate to cache the streaming media data, which reduces the network’s load resulting from huge query messages. At the same time our caching algorithm could save the caching space effectively to cache more data, so the whole system's performance is improved. The results of experimental show that this algorithm is much better than other caching algorithm in the merit of reducing network load, reducing data delays and lower caching buffer.”
+“This paper proposed a local caching algorithm based onthe resource’s access rate, choosing the nodes with high access rate to cache the streaming media data, which reduces the network’s load resulting from huge query messages. At the same time our caching algorithm could save the caching space effectively to cache more data, so the whole system's performance is improved. The results of experimental show that this algorithm is much better than other caching algorithm in the merit of reducing network load, reducing data delays and lower caching buffer.”
 
 “Streaming media is data that is delivered in a continuous stream to a client and that can be used as it arrives. Peer-to-peer (P2P) systems are distributed systems in which nodes of equal roles and capabilities exchange information and services directly with each other. P2P refers to applications that employ distributed resources to perform a function in a decentralized manner. At present, P2P streaming media is the most important technology in the application field of streaming media.”
 
 12.
 
-https://ieeexplore.ieee.org/document/48075
+Link: https://ieeexplore.ieee.org/document/48075
 
 R. Holte, A. Mok, L. Rosier, I. Tulchinsky and D. Varvel, "The pinwheel: a real-time scheduling problem," [1989] Proceedings of the Twenty-Second Annual Hawaii International Conference on System Sciences. Volume II: Software Track, Kailua-Kona, HI, USA, 1989, pp. 693-702 vol.2.
 
 “Some satellites transmit a piece of information for set the duration, then proceed with another piece of information. A ground station receiving from several such satellite and wishing to avoid that data loss faces a real-time scheduling problem. [...] “The Pinwheel” is a formalization of this problem.”
+
+13.
+
+Link: https://dl-acm-org.libproxy.mst.edu/doi/10.17487/RFC2326
+
+H. Schulzrinne, A. Rao, and R. Lanphier. 1998. RFC2326: Real Time Streaming Protocol (RTSP). RFC Editor, USA.
+
+https://doi-org.libproxy.mst.edu/10.17487/RFC2326
+
+“The Real-Time Streaming Protocol (RTSP) establishes and controls either a single or several time-synchronized streams of continuous media such as audio and video. It does not typically deliver the continuous streams itself, although interleaving of the continuous media stream with the control stream is possible (see Section 10.12). In other words, RTSP acts as a "network remote control" for multimedia servers.”
+
+“Aggregate control: The control of the multiple streams using a single timeline by the server. For audio/video feeds, this means that the client may issue a single play or pause message to control both the audio and video feeds.”
+
+Container file:
+          A file which may contain multiple media streams which often
+          comprise a presentation when played together. RTSP servers may
+          offer aggregate control on these files, though the concept of
+          a container file is not embedded in the protocol.
+
+ Presentation:
+          A set of one or more streams presented to the client as a
+          complete media feed, using a presentation description as
+          defined below. In most cases in the RTSP context, this implies
+          aggregate control of those streams, but does not have to.
+
+ Normal play time (NPT) indicates the stream absolute position
+   relative to the beginning of the presentation. The timestamp consists
+   of a decimal fraction. The part left of the decimal may be expressed
+   in either seconds or hours, minutes, and seconds. The part right of
+   the decimal point measures fractions of a second.
+
+
+
+
+
+
+
+
+
+
+
+
 
