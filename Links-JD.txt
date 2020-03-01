@@ -145,23 +145,11 @@ https://doi-org.libproxy.mst.edu/10.17487/RFC2326
 
 “Aggregate control: The control of the multiple streams using a single timeline by the server. For audio/video feeds, this means that the client may issue a single play or pause message to control both the audio and video feeds.”
 
-Container file:
-          A file which may contain multiple media streams which often
-          comprise a presentation when played together. RTSP servers may
-          offer aggregate control on these files, though the concept of
-          a container file is not embedded in the protocol.
+“Container file: A file which may contain multiple media streams which often comprise a presentation when played together. RTSP servers may offer aggregate control on these files, though the concept of a container file is not embedded in the protocol.”
 
- Presentation:
-          A set of one or more streams presented to the client as a
-          complete media feed, using a presentation description as
-          defined below. In most cases in the RTSP context, this implies
-          aggregate control of those streams, but does not have to.
+“Presentation: A set of one or more streams presented to the client as a complete media feed, using a presentation description as defined below. In most cases in the RTSP context, this implies aggregate control of those streams, but does not have to.”
 
- Normal play time (NPT) indicates the stream absolute position
-   relative to the beginning of the presentation. The timestamp consists
-   of a decimal fraction. The part left of the decimal may be expressed
-   in either seconds or hours, minutes, and seconds. The part right of
-   the decimal point measures fractions of a second.
+“Normal play time (NPT) indicates the stream absolute position relative to the beginning of the presentation. The timestamp consists of a decimal fraction. The part left of the decimal may be expressed in either seconds or hours, minutes, and seconds. The part right of the decimal point measures fractions of a second.”
 
 14.
 
@@ -170,6 +158,10 @@ Link: https://ieeexplore-ieee-org.libproxy.mst.edu/abstract/document/629366
 H. Schulzrinne, "A comprehensive multimedia control architecture for the Internet," Proceedings of 7th International Workshop on Network and Operating System Support for Digital Audio and Video (NOSSDAV '97), St. Louis, MO, USA, 1997, pp. 65-76.
 
 https://doi-org.libproxy.mst.edu/10.1109/NOSDAV.1997.629366
+
+“HTTP assumes a reliable byte stream protocol such as TCP as its underlying transport mechanism. For control protocols, the use of TCP simplifies client implementations. (For example, a simpIe design can use inetd to have a process handle exactly one control connection.) TCP also makes it possible to use transport-level security protocols such as SSL.
+
+On the other hand, a flow- and congestion-controlled protocol with strict reliability may not be particularly appropriate for multimedia signaling protocols. TCP timer back-off, for example, may delay retransmission more than necessary, particularly when packet losses are high. Given the query-response nature and low control bandwidth, flow and congestion control are not particularly helpful. Also, for call distribution, user location, group control and awareness, multicasting of control messages is very valuable. Thus, both SIP and RTSP can use either TCP or UDP. For UDP, a request sequence number and timestamp‘ are added to the HTTP-like request and response lines. Unlike TCP, data throughput and flow control are not of concern for these control protocols. While the protocols allow pipelining of requests, i.e., sending a number of requests without waiting for the first one to be acknowledged, this is expected to be needed infrequently.”
 
 15.
 
