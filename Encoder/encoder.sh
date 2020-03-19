@@ -3,12 +3,16 @@
 # Description:
 # Author: Jack~D
 
-DIRECTORY=$(cd $(dirname $0) && pwd) # This directory
+DIRECTORY=$(cd $(dirname ${0}) && pwd) # This directory
 INPUT='' # Path to input video file
 OUTPUT='' # Path to output directory
 DEBUG=false
 QUIET=false
 YES=false
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+WHITE=$(tput sgr0)
 
 helpText() {
    echo -e ' -d --debug\tDebug mode'
@@ -51,15 +55,15 @@ handleParameters() {
             YES=true
             ;;
          *)
-            VALUE="$PARAM"
-            if [ "$COUNT" = '0' ]
+            VALUE="${PARAM}"
+            if [ "${COUNT}" = '0' ]
             then
-               INPUT=$(echo $VALUE | strip)
-            elif [ "$COUNT" = '1' ]
+               INPUT=$(echo "${VALUE}" | strip)
+            elif [ "${COUNT}" = '1' ]
             then
-               OUTPUT=$(echo $VALUE | strip)
+               OUTPUT=$(echo "${VALUE}" | strip)
             else
-               echo -e '\a[ ERROR ] Too many arguments.'
+               echo -e "\a[ ${RED}ERROR${WHITE} ] Too many arguments."
                exit '1'
             fi
             let 'COUNT++'
@@ -67,47 +71,49 @@ handleParameters() {
       esac
       shift
    done
-   if [ "$INPUT" = '' ]
+   if [ "${INPUT}" = '' ]
    then
-      echo -e -n '\a[ ERROR ] No input file. Call with --help for more '
-      echo 'information.'
+      echo -e -n "\a[ ${RED}ERROR${WHITE} ] No input file. Call with --help "
+      echo 'for more information.'
       exit '1'
    fi
-   if [ ! -f "$INPUT" ]
+   if [ ! -f "${INPUT}" ]
    then
-      echo -e "\a[ ERROR ] Input video file \"${INPUT}\" was not found."
+      echo -e -n "\a[ ${RED}ERROR${WHITE} ] Input video file \"${INPUT}\" was "
+      echo 'not found.'
       exit '1'
    fi
-   if [ "$OUTPUT" = '' ]
+   if [ "${OUTPUT}" = '' ]
    then
       OUTPUT=$(echo ${INPUT%.*} | strip)
    fi
-   if [ "$OUTPUT" = '' ]
+   if [ "${OUTPUT}" = '' ]
    then
-      echo -e '\a[ ERROR ] Something is wrong with output directory.'
+      echo -e -n "\a[ ${RED}ERROR${WHITE} ] Something is wrong with output "
+      echo -e 'directory.'
       exit 1
    fi
-   if [ -d "$OUTPUT" ]
+   if [ -d "${OUTPUT}" ]
    then
-      if [ "$(ls $OUTPUT | strip)" != '' ]
+      if [ "$(ls ${OUTPUT} | strip)" != '' ]
       then
-         echo -e '\a[ WARNING ] Output directory is not empty.'
+         echo -e "\a[ ${YELLOW}WARNING${WHITE} ] Output directory is not empty."
          exit 1
       fi
    else
-      mkdir -p "$OUTPUT" || exit '1'
+      mkdir -p "${OUTPUT}" || exit '1'
    fi
-   if [ $DEBUG = true -a $QUIET = false ]
+   if [ ${DEBUG} = true -a ${QUIET} = false ]
    then
-      echo -e "Input = \"$INPUT\"\nOutput = \"$OUTPUT\""
+      echo -e "Input = \"${INPUT}\"\nOutput = \"${OUTPUT}\""
    fi
 }
 
 main()
 {
-   handleParameters "$@"
+   handleParameters "${@}"
 }
 
-main "$@"
+main "${@}"
 
 # END OF LINE
