@@ -3,17 +3,22 @@
 # Description:
 # Author: Jack~D
 
-DIRECTORY=$(cd $(dirname ${0}) && pwd) # This directory
+DIRECTORY=$(cd $(dirname ${0}) && pwd) # Path to this directory
 INPUT='' # Path to input video file
 OUTPUT='' # Path to output directory
-DEBUG=false
-QUIET=false
-YES=false
+
+# Flags
+DEBUG=false # Debug mode
+QUIET=false # Silence printing output
+YES=false # Force yes to questions
+
+# Colors
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
 WHITE=$(tput sgr0)
 
+# Print help information
 helpText() {
    echo -e ' -d --debug\tDebug mode'
    echo -e ' -h --help\tHelp information'
@@ -38,14 +43,14 @@ handleParameters() {
          -d | --debug )
             DEBUG=true
             ;;
-         -h | --help | 'help')
-            helpText # Print help text
+         -h | --help | 'help' | 'Help' )
+            helpText # Print help information
             exit '0'
             ;;
-         -i | --input)
+         -i | --input )
             INPUT=$(echo $VALUE | strip)
             ;;
-         -o | --output)
+         -o | --output )
             OUTPUT=$(echo $VALUE | strip)
             ;;
          -q | --quiet )
@@ -56,21 +61,18 @@ handleParameters() {
             ;;
          *)
             VALUE="${PARAM}"
-            if [ "${COUNT}" = '0' ]
+            [ "${COUNT}" = '0' ] && INPUT=$(echo "${VALUE}" | strip)
+            [ "${COUNT}" = '1' ] && OUTPUT=$(echo "${VALUE}" | strip)
+            if [ "${COUNT}" -gt '1' ]
             then
-               INPUT=$(echo "${VALUE}" | strip)
-            elif [ "${COUNT}" = '1' ]
-            then
-               OUTPUT=$(echo "${VALUE}" | strip)
-            else
                echo -e "\a[ ${RED}ERROR${WHITE} ] Too many arguments."
                exit '1'
             fi
             let 'COUNT++'
             ;;
-      esac
+      esac # End case
       shift
-   done
+   done # End while
    if [ "${INPUT}" = '' ]
    then
       echo -e -n "\a[ ${RED}ERROR${WHITE} ] No input file. Call with --help "
@@ -83,10 +85,7 @@ handleParameters() {
       echo 'not found.'
       exit '1'
    fi
-   if [ "${OUTPUT}" = '' ]
-   then
-      OUTPUT=$(echo ${INPUT%.*} | strip)
-   fi
+   [ "${OUTPUT}" = '' ] && OUTPUT=$(echo ${INPUT%.*} | strip)
    if [ "${OUTPUT}" = '' ]
    then
       echo -e -n "\a[ ${RED}ERROR${WHITE} ] Something is wrong with output "
@@ -97,10 +96,24 @@ handleParameters() {
    then
       if [ "$(ls ${OUTPUT} | strip)" != '' ]
       then
-         echo -e "\a[ ${YELLOW}WARNING${WHITE} ] Output directory is not empty."
+         echo -e "\a[ ${RED}ERROR${WHITE} ] Output directory is not empty."
          exit 1
       fi
    else
+      if [ ${QUIET} = false -a ${YES} = false ]
+      then
+         echo -e "\a[ ${YELLOW}WARNING${WHITE} ] Output directory is not found."
+         echo -n 'Automatically create an output directory (y/n)? '
+         read ANSWER
+         if [ "${ANSWER}" = "${ANSWER#[Yy]}" ]
+         then
+            exit '0'
+         fi
+      fi
+      if [ ${DEBUG} = true -a ${QUIET} = false ]
+      then
+         echo -e "Making directory \"${OUTPUT}\""
+      fi
       mkdir -p "${OUTPUT}" || exit '1'
    fi
    if [ ${DEBUG} = true -a ${QUIET} = false ]
@@ -109,9 +122,29 @@ handleParameters() {
    fi
 }
 
+dependencies() {
+   if [ "$(which ffmpeg | strip)" != '' ]
+   then
+      [ ${QUIET} = false ] && echo -e "\a[ ${GREEN}OK${WHITE} ] ffmpeg"
+   else
+      echo -e -n "\a[ ${RED}ERROR${WHITE} ] ffmpeg not in PATH. Please install "
+      echo 'ffmpeg and add to PATH.'
+      exit '1'
+   fi
+   if [ "$(which ffmpeg | strip)" != '' ]
+   then
+      [ ${QUIET} = false ] && echo -e "\a[ ${GREEN}OK${WHITE} ] python3"
+   else
+      echo -e -n "\a[ ${RED}ERROR${WHITE} ] python3 not in PATH. Please install "
+      echo 'python3 and add to PATH.'
+      exit '1'
+   fi
+}
+
 main()
 {
    handleParameters "${@}"
+   dependencies "${@}"
 }
 
 main "${@}"
