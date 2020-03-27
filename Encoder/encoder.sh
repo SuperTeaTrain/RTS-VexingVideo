@@ -121,6 +121,9 @@ handleParameters() {
       fi
       mkdir -p "${OUTPUT}" || exit '1'
    fi
+   mkdir -p "${OUTPUT}/I-Frames" || exit '1'
+   # mkdir -p "${OUTPUT}/P-Frames" || exit '1'
+   # mkdir -p "${OUTPUT}/Audio" || exit '1'
    if [ ${DEBUG} = true -a ${QUIET} = false ]
    then
       echo -e "Input = \"${INPUT}\"\nOutput = \"${OUTPUT}\""
@@ -151,13 +154,10 @@ main()
 {
    handleParameters "${@}"
    dependencies "${@}"
-   PARAMS="'${INPUT}' '${OUTPUT}/%10d.png'"
+   PARAMS="'${INPUT}' '${OUTPUT}/I-Frames/%10d.png'"
    [ "${QUIET}" = true ] && PARAMS=$(echo -n "${PARAMS} -loglevel 'fatal'")
    [ "${FPS}" != '' ] && PARAMS=$(echo -n "${PARAMS} -vf fps='${FPS}'")
-   #if [ ${DEBUG} = true -a ${QUIET} = false ]
-   #then
-   echo "PARAMS = \"${PARAMS}\""
-   #fi
+   [ "${DEBUG}" = true -a "${QUIET}" = false ] &&  echo "PARAMS = \"${PARAMS}\""
    echo -n "xargs ffmpeg -i ${PARAMS}"  | sh || exit '1'
    #if [ $(echo ${FPS} | strip) = '' ]
    #then
