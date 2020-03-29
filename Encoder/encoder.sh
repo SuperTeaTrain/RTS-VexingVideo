@@ -1,7 +1,13 @@
 #!/bin/sh
 # --- 80 Columns ------------------------------------------------------------- #
-# Description:
+# Description: This script takes a video as input and outputs a folder of frames
+# and a folder of audio segments. # Frames are a mix of i-frames and p-frames.
 # Author: Jack~D
+
+# Example usage:
+# bash 'encoder.sh' 'DUANE.mp4' 'DUANE' -y
+
+# START
 
 DIRECTORY=$(cd $(dirname ${0}) && pwd) # Path to this directory
 INPUT='' # Path to input video file
@@ -13,7 +19,7 @@ DEBUG=false # Debug mode
 QUIET=false # Silence printing output
 YES=false # Force yes to questions
 
-# Colors
+# Terminal colors
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
 YELLOW=$(tput setaf 3)
@@ -36,6 +42,7 @@ strip() {
 }
 
 handleParameters() {
+   
    let 'COUNT = 0'
    while [ "${1}" != '' ]
    do
@@ -77,7 +84,8 @@ handleParameters() {
             ;;
       esac # End case
       shift
-   done # End while
+   done # End while loop
+   
    if [ "${INPUT}" = '' ]
    then
       echo -e -n "\a[ ${RED}ERROR${WHITE} ] No input file. Call with --help "
@@ -121,18 +129,24 @@ handleParameters() {
       fi
       mkdir -p "${OUTPUT}" || exit '1'
    fi
+   
+   # Make directories
    mkdir -p "${OUTPUT}/I-Frames" || exit '1'
    mkdir -p "${OUTPUT}/P-Frames" || exit '1'
    mkdir -p "${OUTPUT}/Frames" || exit '1'
    mkdir -p "${OUTPUT}/Audio" || exit '1'
+   
    if [ ${DEBUG} = true -a ${QUIET} = false ]
    then
       echo -e "Input = \"${INPUT}\"\nOutput = \"${OUTPUT}\""
       echo "FPS = \"${FPS}\""
    fi
+   
 }
 
+# Check if dependencies are found in PATH
 dependencies() {
+   
    if [ "$(which ffmpeg | strip)" != '' ]
    then
       [ ${QUIET} = false ] && echo -e "\a[ ${GREEN}OK${WHITE} ] ffmpeg"
@@ -149,10 +163,12 @@ dependencies() {
       echo ' imagemagick and add to PATH.'
       exit '1'
    fi
+   
 }
 
 main()
 {
+   
    handleParameters "${@}"
    dependencies "${@}"
    
@@ -168,44 +184,84 @@ main()
    cp "${OUTPUT}/I-Frames/0000000001i.png" "${OUTPUT}/Frames"
    END=$(ls "${OUTPUT}/I-Frames" -1 | wc -l | strip)
    
+   # Adds i-frames every 60 frames
    for i in $(seq 1 ${END})
    do
-      echo ${i}
       if [ "$(expr ${i} % 60 | strip)" = '0' ]
       then
-          echo 'Yes'
           FILE=$(printf "${OUTPUT}/I-Frames/%010di.png" ${i})
           cp "${FILE}" "${OUTPUT}/Frames"
       fi
    done
    
    END=$(expr ${END} - 1)
+   # Creates all p-frames
    for i in $(seq 2 ${END})
    do
       if [ "${DEBUG}" = true -a "${QUIET}" = false ]
       then
-         printf "Frame %010d\n" "${i}"
+         printf "Creating frame: %010dp.png\n" "${i}"
       fi
       
       # imagemagic command
       # "-median" reduces images clarity for smaller file size
+      # Also note "-threshold"
       convert \
-      '(' $(printf "${OUTPUT}/I-Frames/%010di.png" $(expr "${i}" + 1)) \
-      -median 5 ')' \
-      '(' $(printf "${OUTPUT}/I-Frames/%010di.png" ${i}) -median 5 ')' \
-      '(' -clone 0 -clone 1 -compose difference -composite -threshold 5000 ')' \
-      -delete 1 -alpha off -compose copy_opacity -composite \
-      $(printf "${OUTPUT}/P-Frames/%010dp.png" ${i}) || exit '1'
+         '(' $(printf "${OUTPUT}/I-Frames/%010di.png" $(expr "${i}" + 1)) \
+         -median 5 ')' \
+         '(' $(printf "${OUTPUT}/I-Frames/%010di.png" ${i}) \
+         -median 5 ')' \
+         '(' -clone 0 -clone 1 -compose difference -composite \
+         -threshold 5000 ')' \
+         -delete 1 -alpha off -compose copy_opacity -composite \
+         $(printf "${OUTPUT}/P-Frames/%010dp.png" ${i}) || exit '1'
       
    done # End for loop
    
    NUM=$(ls "${OUTPUT}/P-Frames" -1 | wc -l | strip)
    NUM=$(echo "${NUM} * 0.05" | bc | awk '{print int($1+2)}' | strip)
+   # Makes extra i-frames where they might be needed
    for i in $(ls --sort=size -l "${OUTPUT}/P-Frames" \
       | sed "${NUM}q" | awk '{print $9}' | awk '/./' | sed 's/p\./i\./g')
    do
-      cp "${OUTPUT}/I-Frames/${i}" "${OUTPUT}/Frames"
+      #cp "${OUTPUT}/I-Frames/${i}" "${OUTPUT}/Frames"
+      echo -n ''
+   done # End for loop
+   
+   # Populates remaining frames as p-frames
+   for i in $(ls "${OUTPUT}/I-Frames" -1)
+   do
+      if [ ! -f "${OUTPUT}/Frames/${i}" ]
+      then
+         FILE=$(echo ${i} | sed 's/i\./p\./g')
+         cp "${OUTPUT}/P-Frames/${FILE}" "${OUTPUT}/Frames"
+      fi
    done
+   
+   echo '1'
+   
+   # Extract audio
+   ffmpeg -i "${INPUT}" -vn -acodec copy "${OUTPUT}/audio.aac" || exit '1'
+   
+   LENGTH=$(ffprobe '-v' 'error' '-show_entries' 'format=duration' '-of' \
+     'default=noprint_wrappers=1:nokey=1' "${OUTPUT}/audio.aac" \
+     | awk '{print int($1)}')
+   
+   for i in $(seq 0 ${LENGTH})
+   do
+      SS=$(expr ${i} % 60)
+      MM=$(expr $(echo "${i} / 60" | bc | awk '{print int($1)}' | strip) % 60)
+      HH=$(echo "${i} / 3600" | bc | awk '{print int($1)}' | strip)
+      NUM=$(printf "%010d" ${i})
+      ffmpeg -f 'aac' -i "${OUTPUT}/audio.aac" \
+         -t '00:00:01' -ss "${HH}:${MM}:${SS}" \
+         -y "${OUTPUT}/Audio/${NUM}.aac" || exit '1'
+   done # End for loop
+   
+   # Remove temp directories
+   rm -r --no-preserve-root "${OUTPUT}/I-Frames"
+   rm -r --no-preserve-root "${OUTPUT}/P-Frames"
+   
 }
 
 main "${@}"
