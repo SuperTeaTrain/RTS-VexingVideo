@@ -122,8 +122,9 @@ handleParameters() {
       mkdir -p "${OUTPUT}" || exit '1'
    fi
    mkdir -p "${OUTPUT}/I-Frames" || exit '1'
-   # mkdir -p "${OUTPUT}/P-Frames" || exit '1'
-   # mkdir -p "${OUTPUT}/Audio" || exit '1'
+   mkdir -p "${OUTPUT}/P-Frames" || exit '1'
+   mkdir -p "${OUTPUT}/Frames" || exit '1'
+   mkdir -p "${OUTPUT}/Audio" || exit '1'
    if [ ${DEBUG} = true -a ${QUIET} = false ]
    then
       echo -e "Input = \"${INPUT}\"\nOutput = \"${OUTPUT}\""
@@ -142,10 +143,10 @@ dependencies() {
    fi
    if [ "$(which ffmpeg | strip)" != '' ]
    then
-      [ ${QUIET} = false ] && echo -e "\a[ ${GREEN}OK${WHITE} ] python3"
+      [ ${QUIET} = false ] && echo -e "\a[ ${GREEN}OK${WHITE} ] convert"
    else
-      echo -e -n "\a[ ${RED}ERROR${WHITE} ] python3 not in PATH. Please install"
-      echo ' python3 and add to PATH.'
+      echo -e -n "\a[ ${RED}ERROR${WHITE} ] convert not in PATH. Please install"
+      echo ' imagemagick and add to PATH.'
       exit '1'
    fi
 }
@@ -154,19 +155,57 @@ main()
 {
    handleParameters "${@}"
    dependencies "${@}"
-   PARAMS="'${INPUT}' '${OUTPUT}/I-Frames/%10d.png'"
+   
+   # ffmpeg command
+   # Extracts frame images
+   PARAMS="'${INPUT}' '${OUTPUT}/I-Frames/%10di.png'"
    [ "${QUIET}" = true ] && PARAMS=$(echo -n "${PARAMS} -loglevel 'fatal'")
    [ "${FPS}" != '' ] && PARAMS=$(echo -n "${PARAMS} -vf fps='${FPS}'")
    [ "${DEBUG}" = true -a "${QUIET}" = false ] &&  echo "PARAMS = \"${PARAMS}\""
    echo -n "xargs ffmpeg -i ${PARAMS}"  | sh || exit '1'
-   #if [ $(echo ${FPS} | strip) = '' ]
-   #then
-   #   ffmpeg -i "${INPUT}" "${OUTPUT}/$filename%10d.png" || exit '1'
-   #else
-   #   ffmpeg -i "${INPUT}" -vf fps="${FPS}" "${OUTPUT}/$filename%10d.png" \
-   #      -loglevel 'quiet' \
-   #      || exit '1'
-   #fi
+   
+   cp "${OUTPUT}/I-Frames/0000000001i.png" "${OUTPUT}/P-Frames/0000000001p.png"
+   cp "${OUTPUT}/I-Frames/0000000001i.png" "${OUTPUT}/Frames"
+   END=$(ls "${OUTPUT}/I-Frames" -1 | wc -l | strip)
+   
+   for i in $(seq 1 ${END})
+   do
+      echo ${i}
+      if [ "$(expr ${i} % 60 | strip)" = '0' ]
+      then
+          echo 'Yes'
+          FILE=$(printf "${OUTPUT}/I-Frames/%010di.png" ${i})
+          cp "${FILE}" "${OUTPUT}/Frames"
+      fi
+   done
+   
+   END=$(expr ${END} - 1)
+   for i in $(seq 2 ${END})
+   do
+      if [ "${DEBUG}" = true -a "${QUIET}" = false ]
+      then
+         printf "Frame %010d\n" "${i}"
+      fi
+      
+      # imagemagic command
+      # "-median" reduces images clarity for smaller file size
+      convert \
+      '(' $(printf "${OUTPUT}/I-Frames/%010di.png" $(expr "${i}" + 1)) \
+      -median 5 ')' \
+      '(' $(printf "${OUTPUT}/I-Frames/%010di.png" ${i}) -median 5 ')' \
+      '(' -clone 0 -clone 1 -compose difference -composite -threshold 5000 ')' \
+      -delete 1 -alpha off -compose copy_opacity -composite \
+      $(printf "${OUTPUT}/P-Frames/%010dp.png" ${i}) || exit '1'
+      
+   done # End for loop
+   
+   NUM=$(ls "${OUTPUT}/P-Frames" -1 | wc -l | strip)
+   NUM=$(echo "${NUM} * 0.05" | bc | awk '{print int($1+2)}' | strip)
+   for i in $(ls --sort=size -l "${OUTPUT}/P-Frames" \
+      | sed "${NUM}q" | awk '{print $9}' | awk '/./' | sed 's/p\./i\./g')
+   do
+      cp "${OUTPUT}/I-Frames/${i}" "${OUTPUT}/Frames"
+   done
 }
 
 main "${@}"
