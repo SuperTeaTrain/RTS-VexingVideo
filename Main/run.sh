@@ -1,7 +1,7 @@
 #!/bin/sh
 # --- 80 Columns ------------------------------------------------------------- #
 
-g++ *.cpp && ./a.out
+python3 main.py
 exit 0
 
 # END OF LINE
