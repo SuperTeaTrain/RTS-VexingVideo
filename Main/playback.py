@@ -53,13 +53,13 @@ def scheduler(arg):
     global frames_lock
     global frames
     global available_frames
-    last_audio = -1
+    last_audio = -100
     with ready_lock:
         pass # Wait for ready_lock
     while True:
        with arg.timer.m_lock:
            t = arg.timer.get_time()
-       if 1 <= t - last_audio:
+       if 0.95 <= t - last_audio:
            last_audio = int(t)
            get_audio(arg, t)
        else:
