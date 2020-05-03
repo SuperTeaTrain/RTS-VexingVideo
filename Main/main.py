@@ -8,12 +8,12 @@
 # --- 80 Columns ------------------------------------------------------------- #
 
 try:
-    import os
+    import os, time
     import tkinter as tk
     from PIL import ImageTk, Image
     import pydub as pdb
     import tkinter.filedialog
-    import playback
+    import playback, timer
 except ImportError as error:
     print("Couldn't load module {}".format(error))
     sys.exit(2)
@@ -60,6 +60,10 @@ class VVWindow:
         self.m_root = tk.Tk()
         
         self.t = 0
+        self.timer = timer.Timer()
+        with self.timer.m_lock:
+            self.timer.set_start_sec(0)
+            self.timer.set_max_sec(1)
         
         # Get size from frame image
         try:
@@ -82,11 +86,11 @@ class VVWindow:
         self.m_button_frame.pack(side=tk.TOP, expand=tk.YES)
         self.m_button_play = tk.Button(self.m_button_frame, text="Play",
                                        padx=10, pady=10,
-                                       command=self._play())
+                                       command=self._play)
         self.m_button_play.pack(side=tk.LEFT)
         self.m_button_pause = tk.Button(self.m_button_frame, text="Pause",
                                         padx=10, pady=10,
-                                        command=self._pause())
+                                        command=self._pause)
         self.m_button_pause.pack(side=tk.LEFT)
         self.m_ctrl_frame = tk.Frame(self.m_base_frame, borderwidth=10,
                                      relief=tk.RIDGE)
@@ -147,10 +151,16 @@ class VVWindow:
         pass
 
     def _pause(self):
-        pass
+        print('Called Pause')
+        with self.timer.m_lock:
+            self.timer.pause()
+        return
     
     def _play(self):
-        pass
+        print('Called Play')
+        with self.timer.m_lock:
+            self.timer.start()
+        return
 
 def __main__():
     a = VVWindow()

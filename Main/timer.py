@@ -16,6 +16,7 @@ class Timer:
         return
     
     def start(self):
+        print('Started')
         self.m_running = True
         self.m_ref_time = time.monotonic()
         return
@@ -32,11 +33,11 @@ class Timer:
     
     def get_time(self):
         if self.m_running:
-            t = time.monotonic()
-            elapsed = self.m_start_sec + t - self.m_ref_time
-            if self.m_max_sec <= elapsed:
-                self.pause(self.m_max_sec)
-                return self.m_start_sec
+            elapsed = self.m_start_sec + time.monotonic() - self.m_ref_time
+            x = min(self.m_max_sec, self.m_end_sec)
+            if x <= elapsed:
+                self.pause(x)
+                return x
             return elapsed 
         else:
             return self.m_start_sec
@@ -47,17 +48,11 @@ class Timer:
         return
     
     def set_start_sec(self, sec):
-        if self.m_end_sec is not None:
-            self.m_start_sec = min(sec, self.m_end_sec)
-        else:
-            self.m_start_sec = sec
+        self.m_start_sec = sec
         return
     
     def set_max_sec(self, sec):
-        if self.m_end_sec is not None:
-            self.m_max_sec = min(sec, self.m_end_sec)
-        else:
-            self.m_max_sec = sec
+        self.m_max_sec = sec
         return
      
 def test():
