@@ -59,7 +59,7 @@ class VVWindow:
     def __init__(self):
         self.m_root = tk.Tk()
         
-        self.t = 0
+        self.paused = True
         self.timer = timer.Timer()
         with self.timer.m_lock:
             self.timer.set_start_sec(0)
@@ -153,13 +153,15 @@ class VVWindow:
     def _pause(self):
         print('Called Pause')
         with self.timer.m_lock:
+            self.paused = True
             self.timer.pause()
         return
     
     def _play(self):
         print('Called Play')
         with self.timer.m_lock:
-            self.timer.start()
+            self.paused = False
+            self.timer.try_start()
         return
 
 def __main__():

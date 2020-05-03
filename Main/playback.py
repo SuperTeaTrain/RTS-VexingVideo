@@ -45,7 +45,11 @@ def get_audio(arg, t):
     print('Get audio')
     with arg.timer.m_lock:
         arg.timer.set_max_sec(t + 1)
+    
     # Delay here?
+    
+    with arg.timer.m_lock:
+        arg.timer.try_start()
     return True
 
 def scheduler(arg):
@@ -59,11 +63,13 @@ def scheduler(arg):
     while True:
        with arg.timer.m_lock:
            t = arg.timer.get_time()
-       if 0.95 <= t - last_audio:
-           last_audio = int(t)
-           get_audio(arg, t)
-       else:
-           get_frame(arg, t)
+           paused = arg.paused
+       if not paused:
+           if 0.95 <= t - last_audio:
+               last_audio = int(t)
+               get_audio(arg, t)
+           else:
+               get_frame(arg, t)
        time.sleep(1/(2*FRAME_RATE))
     return
 
