@@ -5,9 +5,18 @@
 # to accept input for the canvas on the left side of the screen, so that images
 # may be displayed.
 
-import tkinter as tk
-import pydub as pdb
-import tkinter.filedialog
+# --- 80 Columns ------------------------------------------------------------- #
+
+try:
+    import os
+    import tkinter as tk
+    from PIL import ImageTk, Image
+    import pydub as pdb
+    import tkinter.filedialog
+    import playback
+except ImportError as error:
+    print("Couldn't load module {}".format(error))
+    sys.exit(2)
 
 # Class: VVWindow
 # Description: This is the class for the tkinter main window for Vexing Video.
@@ -49,8 +58,19 @@ class VVWindow:
 
     def __init__(self):
         self.m_root = tk.Tk()
+        
+        self.t = 0
+        
+        # Get size from frame image
+        try:
+            temp = ImageTk.PhotoImage(Image.open('Frames/0000000001i.png'))
+            m_c_width, m_c_height = temp.width(), temp.height()
+        except:
+            m_c_width, m_c_height = 800, 600
+        
         self.m_v_is_dt = True
         self.m_root.title = "Vexing Video"
+        self.m_root.protocol('WM_DELETE_WINDOW', self.on_cleanup)
         self.m_base_frame = tk.Frame(self.m_root, borderwidth=10)
         self.m_base_frame.pack()
         self.m_canvas_frame = tk.Frame(self.m_base_frame, background='RED')
@@ -104,9 +124,19 @@ class VVWindow:
         self.m_menubar.add_cascade(label = 'File', menu = self.m_menu_file)
         self.m_root.config(menu=self.m_menubar)
 
-    def start(self):
-        self.m_root.mainloop()
+    def on_cleanup(self):
+        self.m_root.destroy()
+        os._exit(1)
+        return
 
+    def start(self):
+        playback.start(self)
+        self.m_root.mainloop()
+    
+    def on_loop(self):
+        playback.on_loop(self)
+        return
+    
     def _trigger_open(self):
         self.video_dir = tk.filedialog.askdirectory()
 
