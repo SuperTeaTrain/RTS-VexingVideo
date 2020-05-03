@@ -123,6 +123,7 @@ class VVWindow:
         self.m_menu_file.add_command(label = "Exit", command = lambda : exit(0))
         self.m_menubar.add_cascade(label = 'File', menu = self.m_menu_file)
         self.m_root.config(menu=self.m_menubar)
+        return
 
     def on_cleanup(self):
         self.m_root.destroy()
@@ -132,6 +133,7 @@ class VVWindow:
     def start(self):
         playback.start(self)
         self.m_root.mainloop()
+        return
     
     def on_loop(self):
         playback.on_loop(self)
@@ -139,6 +141,7 @@ class VVWindow:
     
     def _trigger_open(self):
         self.video_dir = tk.filedialog.askdirectory()
+        return
 
     def _trigger_help(self):
         pass
@@ -152,5 +155,6 @@ class VVWindow:
 def __main__():
     a = VVWindow()
     a.start()
+    return
 
 __main__()
