@@ -1,49 +1,67 @@
 try:
-    import os
+    import os, sys, time, queue, threading
     from tkinter import *  
     from PIL import ImageTk, Image
-    import time
     from threading import Timer
-    import queue
-    import threading
 except ImportError as error:
     print("Couldn't load module {}".format(error))
     sys.exit(2)
 
 # --- 80 Columns ------------------------------------------------------------- #
 
-UPDATE_RATE = int(1000/16)
+FRAME_RATE = 29.970030
+UPDATE_RATE = int(1000/FRAME_RATE + 0.5)
 
-readyLock = threading.Lock()
-readyLock.acquire()
-framesLock = threading.Lock()
-framesLock.acquire()
+ready_lock = threading.Lock()
+ready_lock.acquire()
+frames_lock = threading.Lock()
+frames_lock.acquire()
 
 frames = []
 available_frames = []
 
 class myThread(threading.Thread):
-   def __init__(self, threadID, func):
+   def __init__(self, func):
       threading.Thread.__init__(self)
-      self.threadID = threadID
       self.func = func
    def run(self):
       self.func()
 
-def scheduler():
-    global readyLock
-    global framesLock
+def get_frame(t):
+    global ready_lock
+    global frames_lock
     global frames
     global available_frames
-    t = 0
-    with readyLock:
-        pass
+    f = int(t*FRAME_RATE)
+    with frames_lock:
+        if 0 < len(frames) and f < len(frames):
+            available_frames += [frames[f]]
+            # Delay here?
+        return
+    return
+
+def get_audio(t):
+    print('Get audio')
+    # Delay here?
+    return True
+
+def scheduler():
+    global ready_lock
+    global frames_lock
+    global frames
+    global available_frames
+    last_audio = -1
+    with ready_lock:
+        pass # Wait for ready_lock
+    start_time = time.monotonic()
     while True:
-       with framesLock:
-           if 0 < len(frames) and t < len(frames):
-               available_frames += [frames[t]]
-           t = t + 1
-       time.sleep(0.2)
+       t = time.monotonic() - start_time
+       if .98 < t - last_audio:
+           get_audio(t)
+           last_audio = t
+       else:
+           get_frame(t)
+       time.sleep(1/(2*FRAME_RATE))
     return
 
 class App():
@@ -51,10 +69,11 @@ class App():
         self.t = 0
         self.root = Tk()
         self.root.title('Vexing Video')
+        self.root.protocol('WM_DELETE_WINDOW', self.on_cleanup)
         return
     def start(self):
-        global readyLock
-        global framesLock
+        global ready_lock
+        global frames_lock
         global frames
         global available_frames
         frames = [
@@ -70,12 +89,14 @@ class App():
             in frames
         ]
         print('len(frames) = ' + str(len(frames)))
-        readyLock.release()
-        framesLock.release()
+        ready_lock.release()
+        frames_lock.release()
         self.on_loop()
         self.root.mainloop()
         return
     def on_cleanup(self):
+        self.root.destroy()
+        os._exit(1)
         return
     def create_canvas(self, width, height):
         self.width1 = width
@@ -83,18 +104,15 @@ class App():
         self.canvas1 = Canvas(width=self.width1, height=self.height1)
         self.canvas1.pack()
         return
-    #def set_frames(self, frames):
-    #    self.frames = frames
-    #    return
     def on_loop(self):
-        global readyLock
-        global framesLock
+        global ready_lock
+        global frames_lock
         global frames
         global available_frames
-        if 0 < len(frames) and self.t % len(frames) == 0:
-            self.canvas1.delete('all')
-        with framesLock:
-            if 0 < len(available_frames):
+        if 0 < len(available_frames):
+            with frames_lock:
+                if available_frames[self.t][0] == 'i':
+                    self.canvas1.delete('all')
                 self.canvas1.create_image(
                     self.width1/2,
                     self.height1/2,
@@ -109,12 +127,11 @@ def gui_main():
     app = App()
     temp = ImageTk.PhotoImage(Image.open('Frames/0000000001i.png'))
     app.create_canvas(temp.width(), temp.height())
-    #app.set_frames(frames)
     app.start()
     return
 
 if __name__ == '__main__' :
-    thread1 = myThread('2', scheduler)
+    thread1 = myThread(scheduler)
     thread1.start()
     gui_main()
 
