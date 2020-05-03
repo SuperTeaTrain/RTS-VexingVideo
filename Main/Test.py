@@ -56,9 +56,9 @@ def scheduler():
     start_time = time.monotonic()
     while True:
        t = time.monotonic() - start_time
-       if .98 < t - last_audio:
+       if 1 <= t - last_audio:
+           last_audio = int(t)
            get_audio(t)
-           last_audio = t
        else:
            get_frame(t)
        time.sleep(1/(2*FRAME_RATE))
