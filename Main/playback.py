@@ -48,7 +48,7 @@ def get_frame(arg, t):
     return
 
 def play_audio(arg):
-    #play(AudioSegment.from_file(arg, 'aac'))
+    play(AudioSegment.from_file(arg, 'aac'))
     return
 
 def get_audio(arg, t):
