@@ -58,7 +58,8 @@ class VVWindow:
     def __init__(self):
         self.m_root = tk.Tk()
         
-        self.m_last_i_frame = -100
+        self.m_last_i_frame = -999
+        self.m_last_audio = -999
         self.paused = True
         self.timer = timer.Timer()
         with self.timer.m_lock:
@@ -151,14 +152,12 @@ class VVWindow:
         pass
 
     def _pause(self):
-        print('Called Pause')
         with self.timer.m_lock:
             self.paused = True
             self.timer.pause()
         return
     
     def _play(self):
-        print('Called Play')
         with self.timer.m_lock:
             self.paused = False
             self.timer.try_start()

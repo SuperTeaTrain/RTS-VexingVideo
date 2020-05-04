@@ -59,7 +59,10 @@ class Timer:
         return
     
     def set_max_sec(self, sec):
-        self.m_max_sec = sec
+        if self.m_end_sec is not None:
+            self.m_max_sec = max(sec, self.m_end_sec)
+        else:
+            self.m_max_sec = sec
         return
      
 def test():

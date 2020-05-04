@@ -42,10 +42,8 @@ def get_frame(arg, t):
         if 0 <= i_frame < len(frames) and available_frames[i_frame] is None:
             available_frames[i_frame] = frames[i_frame]
             return
-            # Delay here?
         if 0 <= frame < len(frames) and available_frames[frame] is None:
             available_frames[frame] = frames[frame]
-            # Delay here?
             return
     return
 
@@ -59,7 +57,6 @@ def get_audio(arg, t):
     if 0 <= t < len(audio):
         with arg.timer.m_lock:
             arg.timer.set_max_sec(t + 1)
-        # Delay here?
         thread2 = myThread(play_audio, audio[int(t)])
         thread2.start()
         with arg.timer.m_lock:
@@ -71,7 +68,6 @@ def scheduler(arg):
     global frames_lock
     global frames
     global available_frames
-    last_audio = -999
     with ready_lock:
         pass # Wait for ready_lock
     while True:
@@ -79,8 +75,8 @@ def scheduler(arg):
            t = arg.timer.get_time()
            paused = arg.paused
        if not paused:
-           if 1 <= t - last_audio:
-               last_audio = int(t)
+           if 1 <= t - arg.m_last_audio:
+               arg.m_last_audio = int(t)
                get_audio(arg, t)
            else:
                get_frame(arg, t)
@@ -114,11 +110,26 @@ def start(self):
         if os.path.isfile(os.path.join('Audio', filename))
     ])
     with self.timer.m_lock:
-       self.timer.set_end_sec(len(frames) * FRAME_RATE)
+       self.timer.set_end_sec(len(frames) / FRAME_RATE)
     available_frames = [None for i in frames]
     ready_lock.release()
     frames_lock.release()
     self.on_loop()
+    return
+
+def reset(self):
+    global ready_lock
+    global frames_lock
+    global available_frames
+    self.m_last_i_frame = -999
+    self.m_last_audio = -999
+    self.paused = True
+    with self.timer.m_lock:
+        self.timer.set_start_sec(0)
+        self.timer.set_max_sec(1)
+        self.timer.set_end_sec(len(frames) * FRAME_RATE)
+    with frames_lock:
+        available_frames = [None for i in frames]
     return
 
 def on_loop(self):
@@ -157,6 +168,10 @@ def on_loop(self):
                 frame -= 1
                 if frame < 0:
                     break
+        with self.timer.m_lock:
+            end_sec = self.timer.m_end_sec
+        if t == end_sec:
+            reset(self)
     self.m_root.after(UPDATE_RATE, self.on_loop)
     return
 
