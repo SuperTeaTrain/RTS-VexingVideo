@@ -36,16 +36,17 @@ def get_frame(arg, t):
     global frames_lock
     global frames
     global available_frames
-    f = int(t*FRAME_RATE)
-    i_frame = max(0, int((f+1)/60)*60-1)
+    frame = int(t*FRAME_RATE)
+    i_frame = max(0, int((frame+1)/60)*60-1)
     with frames_lock:
         if 0 <= i_frame < len(frames) and available_frames[i_frame] is None:
             available_frames[i_frame] = frames[i_frame]
+            return
             # Delay here?
-        if 0 <= f < len(frames) and available_frames[f] is None:
-            available_frames[f] = frames[f]
+        if 0 <= frame < len(frames) and available_frames[frame] is None:
+            available_frames[frame] = frames[frame]
             # Delay here?
-        return
+            return
     return
 
 def play_audio(arg):
@@ -129,9 +130,21 @@ def on_loop(self):
         with self.timer.m_lock:
             t = self.timer.get_time()
         frame = int(t*FRAME_RATE)
+        i_frame = max(0, int((frame+1)/60)*60-1)
         with frames_lock:
             while True:
-                if frame < len(available_frames) and \
+                if 0 <= i_frame < len(frames) and \
+                    i_frame != self.m_last_i_frame and \
+                    available_frames [i_frame] is not None:
+                    self.m_canvas_main.delete('all')
+                    self.m_canvas_main.create_image(
+                        self.m_c_width/2,
+                        self.m_c_height/2,
+                        image=available_frames[i_frame][1]
+                    )
+                    self.m_last_i_frame = i_frame
+                    break
+                if 0 <= frame < len(frames) and \
                     available_frames[frame] is not None:
                     if available_frames[frame][0] == 'i':
                         self.m_canvas_main.delete('all')

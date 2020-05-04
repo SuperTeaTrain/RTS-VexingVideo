@@ -58,6 +58,7 @@ class VVWindow:
     def __init__(self):
         self.m_root = tk.Tk()
         
+        self.m_last_i_frame = -100
         self.paused = True
         self.timer = timer.Timer()
         with self.timer.m_lock:
