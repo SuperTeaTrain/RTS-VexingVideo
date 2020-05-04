@@ -13,7 +13,8 @@ try:
     from PIL import ImageTk, Image
     import pydub as pdb
     import tkinter.filedialog
-    import playback, timer
+    import sys
+    from . import playback, timer
 except ImportError as error:
     print("Couldn't load module {}".format(error))
     sys.exit(2)
