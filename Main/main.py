@@ -23,7 +23,6 @@ except ImportError as error:
 # it is class, so that it, and all of its modules, may be passed as a whole to 
 # a separate main function.
 
-
 class VVWindow:
     m_root = None # TCL is used in lieu of Tk for ease of use on Linux.
     m_q = None # Picture to be displayed on the canvas ASAP.
