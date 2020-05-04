@@ -121,13 +121,14 @@ def reset(self):
     global ready_lock
     global frames_lock
     global available_frames
-    self.m_last_i_frame = -999
-    self.m_last_audio = -999
-    self.paused = True
+    print('R E S E T')
     with self.timer.m_lock:
+        self.timer.pause()
         self.timer.set_start_sec(0)
-        self.timer.set_max_sec(1)
         self.timer.set_end_sec(len(frames) * FRAME_RATE)
+        self.timer.set_max_sec(1)
+        self.m_last_i_frame = -999
+        self.m_last_audio = -999
     with frames_lock:
         available_frames = [None for i in frames]
     return
@@ -170,7 +171,7 @@ def on_loop(self):
                     break
         with self.timer.m_lock:
             end_sec = self.timer.m_end_sec
-        if t == end_sec:
+        if abs(end_sec - t) <= 0.05:
             reset(self)
     self.m_root.after(UPDATE_RATE, self.on_loop)
     return

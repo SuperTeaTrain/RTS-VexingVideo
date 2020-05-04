@@ -29,6 +29,7 @@ class Timer:
         return
     
     def pause(self, t=None):
+        print('Paused')
         if self.m_running:
             self.m_running = False
             if t is not None:
