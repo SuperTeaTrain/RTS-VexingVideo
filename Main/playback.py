@@ -48,7 +48,7 @@ def get_frame(arg, t):
     return
 
 def play_audio(arg):
-    play(AudioSegment.from_file(arg, 'aac'))
+    #play(AudioSegment.from_file(arg, 'aac'))
     return
 
 def get_audio(arg, t):
@@ -121,11 +121,10 @@ def reset(self):
     global ready_lock
     global frames_lock
     global available_frames
-    print('R E S E T')
     with self.timer.m_lock:
         self.timer.pause()
         self.timer.set_start_sec(0)
-        self.timer.set_end_sec(len(frames) * FRAME_RATE)
+        self.timer.set_end_sec(len(frames) / FRAME_RATE)
         self.timer.set_max_sec(1)
         self.m_last_i_frame = -999
         self.m_last_audio = -999
