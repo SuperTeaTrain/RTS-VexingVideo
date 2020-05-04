@@ -51,16 +51,16 @@ def play_audio(arg):
     play(AudioSegment.from_file(arg, 'aac'))
     return
 
-def get_audio(arg, t):
+def get_audio(arg, t_original):
     global audio
-    t = int(t + 0.5)
+    t = int(t_original + 0.5)
     if 0 <= t < len(audio):
         with arg.timer.m_lock:
             arg.timer.set_max_sec(t + 1)
-        thread2 = myThread(play_audio, audio[int(t)])
-        thread2.start()
-        with arg.timer.m_lock:
-            arg.timer.try_start()
+            if 0 < arg.m_last_audio:
+                arg.timer.try_start()
+            thread2 = myThread(play_audio, audio[t])
+            thread2.start()
     return True
 
 def scheduler(arg):
@@ -75,7 +75,8 @@ def scheduler(arg):
            t = arg.timer.get_time()
            paused = arg.paused
        if not paused:
-           if 1 <= t - arg.m_last_audio:
+           #print("t - arg.m_last_audio = {}".format(t - arg.m_last_audio))
+           if 1 <= abs(t - arg.m_last_audio):
                arg.m_last_audio = int(t)
                get_audio(arg, t)
            else:
@@ -122,6 +123,7 @@ def reset(self):
     global frames_lock
     global available_frames
     with self.timer.m_lock:
+        self.paused = True
         self.timer.pause()
         self.timer.set_start_sec(0)
         self.timer.set_end_sec(len(frames) / FRAME_RATE)
