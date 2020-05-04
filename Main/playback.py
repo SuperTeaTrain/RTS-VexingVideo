@@ -1,6 +1,8 @@
 try:
     import os, sys, time, threading
-    import tkinter as tk  
+    import tkinter as tk
+    from pydub import AudioSegment
+    from pydub.playback import play
     from PIL import ImageTk, Image
     import timer
 except ImportError as error:
@@ -19,6 +21,7 @@ frames_lock.acquire()
 
 frames = []
 available_frames = []
+audio = []
 
 class myThread(threading.Thread):
    def __init__(self, func, arg=None):
@@ -34,22 +37,32 @@ def get_frame(arg, t):
     global frames
     global available_frames
     f = int(t*FRAME_RATE)
+    i_frame = max(0, int((f+1)/60)*60-1)
     with frames_lock:
+        if 0 <= i_frame < len(frames) and available_frames[i_frame] is None:
+            available_frames[i_frame] = frames[i_frame]
+            # Delay here?
         if 0 <= f < len(frames) and available_frames[f] is None:
             available_frames[f] = frames[f]
             # Delay here?
         return
     return
 
+def play_audio(arg):
+    play(AudioSegment.from_file(arg, 'aac'))
+    return
+
 def get_audio(arg, t):
-    print('Get audio')
-    with arg.timer.m_lock:
-        arg.timer.set_max_sec(t + 1)
-    
-    # Delay here?
-    
-    with arg.timer.m_lock:
-        arg.timer.try_start()
+    global audio
+    t = int(t + 0.5)
+    if 0 <= t < len(audio):
+        with arg.timer.m_lock:
+            arg.timer.set_max_sec(t + 1)
+        # Delay here?
+        thread2 = myThread(play_audio, audio[int(t)])
+        thread2.start()
+        with arg.timer.m_lock:
+            arg.timer.try_start()
     return True
 
 def scheduler(arg):
@@ -57,7 +70,7 @@ def scheduler(arg):
     global frames_lock
     global frames
     global available_frames
-    last_audio = -100
+    last_audio = -999
     with ready_lock:
         pass # Wait for ready_lock
     while True:
@@ -65,7 +78,7 @@ def scheduler(arg):
            t = arg.timer.get_time()
            paused = arg.paused
        if not paused:
-           if 0.95 <= t - last_audio:
+           if 1 <= t - last_audio:
                last_audio = int(t)
                get_audio(arg, t)
            else:
@@ -78,6 +91,7 @@ def start(self):
     global frames_lock
     global frames
     global available_frames
+    global audio
     thread1 = myThread(scheduler, self)
     thread1.start()
     frames = [
@@ -92,6 +106,12 @@ def start(self):
         for i
         in frames
     ]
+    audio = sorted([
+        'Audio/' + filename
+        for filename
+        in os.listdir('Audio')
+        if os.path.isfile(os.path.join('Audio', filename))
+    ])
     with self.timer.m_lock:
        self.timer.set_end_sec(len(frames) * FRAME_RATE)
     available_frames = [None for i in frames]
