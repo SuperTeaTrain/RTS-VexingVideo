@@ -22,6 +22,10 @@ class FrameDelayer:
     m_ds_video = -1
     _vid_variance = 30
     _aud_variance = 90
+    m_v_buffer = None
+    m_a_buffer = None
+    m_v_flag = False
+    m_a_flag = False
     
     # Description: Default constructor for the Frame Delayer. It does NOT
     # contain initial values for the delay, because this will always start at 0
@@ -43,7 +47,7 @@ class FrameDelayer:
 
     def get_frame(self, new_seed=None):
         if self.m_v_index < len(m_vlist_files):
-            buffer = self.m_vlist_files[self.m_v_index]
+            self.m_v_buffer = self.m_vlist_files[self.m_v_index]
             self.m_v_index += 1
             if new_seed is not None:
                 if new_seed > 0:
@@ -51,14 +55,16 @@ class FrameDelayer:
                 elif new_seed == 0:
                     self.m_ds_video = -1
             if self.m_ds_video == -1:
-                return buffer
+                self.send_video()
+                return
             else:
                 waittime = random.randint(self.m_ds_video - self._vid_variance,
                                           self.m_ds_video + self._vid_variance)
-                sys.sleep(waittime) # !!! This seems ROUGH!
-                return buffer
+                threading.timer(waittime/1000, self.send_video())
+                return
         else:
             return None # The video is over.
+        
 
     def get_audio_snippet(self, new_seed=None):
         if self.m_a_index < len(m_alist_files):
