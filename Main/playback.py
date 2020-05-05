@@ -48,7 +48,7 @@ def get_frame(arg, t):
     return
 
 def play_audio(arg):
-    play(AudioSegment.from_file(arg, 'aac'))
+    #play(AudioSegment.from_file(arg, 'aac'))
     return
 
 def get_audio(arg, t_original):
@@ -59,8 +59,8 @@ def get_audio(arg, t_original):
             arg.timer.set_max_sec(t + 1)
             if 0 < arg.m_last_audio:
                 arg.timer.try_start()
-            thread2 = myThread(play_audio, audio[t])
-            thread2.start()
+        thread2 = myThread(play_audio, audio[t])
+        thread2.start()
     return True
 
 def scheduler(arg):
