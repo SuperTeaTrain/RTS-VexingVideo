@@ -18,10 +18,18 @@ ready_lock = threading.Lock()
 ready_lock.acquire()
 frames_lock = threading.Lock()
 frames_lock.acquire()
+audio_lock = threading.Lock()
+audio_lock.acquire()
+audio_playback_lock = threading.Lock()
+audio_playback_lock.acquire()
 
 frames = []
 available_frames = []
+available_audio = []
 audio = []
+
+flag_a_r = False
+flag_v_r = False
 
 class myThread(threading.Thread):
    def __init__(self, func, arg=None):
@@ -54,7 +62,9 @@ def play_audio(arg):
     return
 
 def get_audio(arg, t):
+    global available_audio
     global audio
+    global audio_lock
     t = int(t + 0.5)
     if 0 <= t < len(audio):
         with arg.timer.m_lock:
@@ -69,27 +79,41 @@ def get_audio(arg, t):
 def scheduler(arg):
     global ready_lock
     global frames_lock
+    global audio_lock
     global frames
     global available_frames
+    global available_audio
     last_audio = -999
     with ready_lock:
         pass # Wait for ready_lock
     while True:
-       with arg.timer.m_lock:
-           t = arg.timer.get_time()
-           paused = arg.paused
-       if not paused:
-           if 1 <= t - last_audio:
-               last_audio = int(t)
-               get_audio(arg, t)
-           else:
-               get_frame(arg, t)
-       time.sleep(1/(2*FRAME_RATE))
+        if flag_a_r:
+            with audio_lock:
+                if (len(available_audio)):
+                   t = available_audio[-1][0] + 1
+                else:
+                    t = 0
+            paused = arg.paused
+
+
+        elif flag_v_r:
+            pass 
+        with arg.timer.m_lock:
+            t = arg.timer.get_time()
+            paused = arg.paused
+        if not paused:
+            if 1 <= t - last_audio:
+                last_audio = int(t)
+                get_audio(arg, t)
+            else:
+                get_frame(arg, t)
+        time.sleep(1/(2*FRAME_RATE))
     return
 
 def start(self):
     global ready_lock
     global frames_lock
+    global audio_lock
     global frames
     global available_frames
     global audio
@@ -124,6 +148,7 @@ def start(self):
 def on_loop(self):
     global ready_lock
     global frames_lock
+    global audio_lock
     global frames
     global available_frames
     if 0 < len(available_frames):
