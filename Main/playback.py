@@ -12,10 +12,13 @@ except ImportError as error:
 # --- 80 Columns ------------------------------------------------------------- #
 
 FRAME_RATE = 29.970030
+# The frame rate converted to a period in milliseconds
 UPDATE_RATE = int(1000/FRAME_RATE + 0.5)
 
+# Locks threads until everything is ready
 ready_lock = threading.Lock()
 ready_lock.acquire()
+# Locks the frame buffer when accessed
 frames_lock = threading.Lock()
 frames_lock.acquire()
 audio_lock = threading.Lock()
@@ -27,7 +30,10 @@ frames = []
 available_frames = []
 audio = [] # I will be replcing this, check for usage.
 available_audio = []
+available_frames = [] # Frame buffer
+audio = []
 
+# Basic thread class that supports passing an argument
 class myThread(threading.Thread):
    def __init__(self, func, arg=None):
       threading.Thread.__init__(self)
@@ -36,13 +42,20 @@ class myThread(threading.Thread):
    def run(self):
       self.func(self.arg)
 
+# Adds frame to frame buffer
+# arg: VWindow
+# t: time in seconds
 def get_frame(arg, t):
     global ready_lock
     global frames_lock
     global frames
     global available_frames
     frame = int(t*FRAME_RATE)
+    # There is always and I-frame at the beginning and every 60 frames
+    # Corresponds to indices: 0, 59, 119, ...
     i_frame = max(0, int((frame+1)/60)*60-1)
+    # Adds a frame to the frame buffer
+    # Grabs an i_frame if it was missed
     with frames_lock:
         if 0 <= i_frame < len(frames) and available_frames[i_frame] is None:
             available_frames[i_frame] = frames[i_frame]
@@ -59,20 +72,30 @@ def play_audio(arg):
     play(AudioSegment.from_file(arg, 'aac'))
     return
 
+# Retrives audio
+# arg: VWindow
+# t: time in seconds
 def get_audio(arg, t_original):
     global audio
     global available_audio
     global audio_lock
+    # Rounds t
+    # Maybe it shouldn't round like this
     t = int(t_original + 0.5)
     if 0 <= t < len(audio):
         with arg.timer.m_lock:
+            # Lets the video go further
+            # Since audio is required to procede
             arg.timer.set_max_sec(t + 1)
             if 0 < arg.m_last_audio:
                 arg.timer.try_start()
+        # A new thread MUST be spawned to play audio
         thread2 = myThread(play_audio, audio[t])
         thread2.start()
+    # Return values could be used to indicate success or something
     return True
 
+# arg: VWindow
 def scheduler(arg):
     global ready_lock
     global frames_lock
@@ -93,9 +116,13 @@ def scheduler(arg):
                get_audio(arg, t)
            else:
                get_frame(arg, t)
+       # How frequently the scheduler runs
+       # This could be messed with but should happen at least as frequently as
+       # the frames are needed
        time.sleep(1/(2*FRAME_RATE))
     return
 
+# self: VWindow
 def start(self):
     global ready_lock
     global frames_lock
@@ -106,6 +133,7 @@ def start(self):
     global audio
     global available_audio
     thread1 = myThread(scheduler, self)
+    thread1 = myThread(scheduler, self) # Spawn scheduler
     thread1.start()
     frames = [
         [filename[10], 'Frames/' + filename]
@@ -113,12 +141,15 @@ def start(self):
         in os.listdir('Frames')
         if os.path.isfile(os.path.join('Frames', filename))
     ]
-    frames = sorted(frames, key=lambda x: x[1])
+    frames = sorted(frames, key=lambda x: x[1]) # Sort by filename
+    # Open images and store them
+    # This is where the preprocessing happens
     frames = [
         [i[0], ImageTk.PhotoImage(Image.open(i[1]))]
         for i
         in frames
     ]
+    # Just a list of file paths
     audio = sorted([
         'Audio/' + filename
         for filename
@@ -135,6 +166,7 @@ def start(self):
     self.on_loop()
     return
 
+# self: VWindow
 def reset(self):
     global ready_lock
     global frames_lock
@@ -150,11 +182,12 @@ def reset(self):
         self.m_last_i_frame = -999
         self.m_last_audio = -999
     with frames_lock:
-        available_frames = [None for i in frames]
+        available_frames = [None for i in frames] # Clear frame buffer
     with audio_lock:
         available_audio = [None for i in audio]
     return
 
+# self: VWindow
 def on_loop(self):
     global ready_lock
     global frames_lock
@@ -164,13 +197,16 @@ def on_loop(self):
         with self.timer.m_lock:
             t = self.timer.get_time()
         frame = int(t*FRAME_RATE)
+        # There is always and I-frame at the beginning and every 60 frames
+        # Corresponds to indices: 0, 59, 119, ...
         i_frame = max(0, int((frame+1)/60)*60-1)
         with frames_lock:
-            while True:
+            while True: # Loop is always broken out of eventually
+                # Displays the last I-frame if needed
                 if 0 <= i_frame < len(frames) and \
                     i_frame != self.m_last_i_frame and \
                     available_frames [i_frame] is not None:
-                    self.m_canvas_main.delete('all')
+                    self.m_canvas_main.delete('all') # Clear canvas
                     self.m_canvas_main.create_image(
                         self.m_c_width/2,
                         self.m_c_height/2,
@@ -178,23 +214,26 @@ def on_loop(self):
                     )
                     self.m_last_i_frame = i_frame
                     break
+                # Displays frame closest to current time but not after
                 if 0 <= frame < len(frames) and \
                     available_frames[frame] is not None:
                     if available_frames[frame][0] == 'i':
-                        self.m_canvas_main.delete('all')
+                        self.m_canvas_main.delete('all') # Clear canvas
                     self.m_canvas_main.create_image(
                         self.m_c_width/2,
                         self.m_c_height/2,
                         image=available_frames[frame][1]
                     )
                     break
+                # If this is reached, then there are frames missing
+                # So it will look for previous frames
                 frame -= 1
                 if frame < 0:
-                    break
+                    break # Here, the beginning is reached
         with self.timer.m_lock:
             end_sec = self.timer.m_end_sec
         if abs(end_sec - t) <= 0.05:
-            reset(self)
-    self.m_root.after(UPDATE_RATE, self.on_loop)
+            reset(self) # Reached the end of the video
+    self.m_root.after(UPDATE_RATE, self.on_loop) # Calls itself to forever
     return
 
