@@ -18,10 +18,15 @@ ready_lock = threading.Lock()
 ready_lock.acquire()
 frames_lock = threading.Lock()
 frames_lock.acquire()
+audio_lock = threading.Lock()
+audio_lock.acquire()
+audio_pb_lock = threading.Lock()
+audio_pb_lock.acquire()
 
 frames = []
 available_frames = []
-audio = []
+audio = [] # I will be replcing this, check for usage.
+available_audio = []
 
 class myThread(threading.Thread):
    def __init__(self, func, arg=None):
@@ -48,11 +53,16 @@ def get_frame(arg, t):
     return
 
 def play_audio(arg):
-    #play(AudioSegment.from_file(arg, 'aac'))
+    global audio_lock
+    global audio_pb_lock
+    global available_audio
+    play(AudioSegment.from_file(arg, 'aac'))
     return
 
 def get_audio(arg, t_original):
     global audio
+    global available_audio
+    global audio_lock
     t = int(t_original + 0.5)
     if 0 <= t < len(audio):
         with arg.timer.m_lock:
@@ -66,8 +76,10 @@ def get_audio(arg, t_original):
 def scheduler(arg):
     global ready_lock
     global frames_lock
+    global audio_lock
     global frames
     global available_frames
+    global available_audio
     with ready_lock:
         pass # Wait for ready_lock
     while True:
@@ -87,9 +99,12 @@ def scheduler(arg):
 def start(self):
     global ready_lock
     global frames_lock
+    global audio_lock
+    global audio_pb_lock
     global frames
     global available_frames
     global audio
+    global available_audio
     thread1 = myThread(scheduler, self)
     thread1.start()
     frames = [
@@ -115,13 +130,17 @@ def start(self):
     available_frames = [None for i in frames]
     ready_lock.release()
     frames_lock.release()
+    audio_lock.release()
+    audio_pb_lock.release()
     self.on_loop()
     return
 
 def reset(self):
     global ready_lock
     global frames_lock
+    global audio_lock
     global available_frames
+    global available_audio
     with self.timer.m_lock:
         self.paused = True
         self.timer.pause()
@@ -132,6 +151,8 @@ def reset(self):
         self.m_last_audio = -999
     with frames_lock:
         available_frames = [None for i in frames]
+    with audio_lock:
+        available_audio = [None for i in audio]
     return
 
 def on_loop(self):
