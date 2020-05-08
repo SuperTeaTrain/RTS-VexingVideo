@@ -16,7 +16,7 @@ FRAME_RATE = 29.970030
 UPDATE_RATE = int(1000/FRAME_RATE + 0.5)
 
 # Locks threads until everything is ready
-ready_lock = threading.Lock()
+ready_lock = threading.Lock()   
 ready_lock.acquire()
 # Locks the frame buffer when accessed
 frames_lock = threading.Lock()
@@ -69,29 +69,43 @@ def play_audio(arg):
     global audio_lock
     global audio_pb_lock
     global available_audio
-    play(AudioSegment.from_file(arg, 'aac'))
+    with audio_lock:
+        b = AudioSegment.from_file(arg[1], 'aac')
+    #with arg.timer.m_lock:
+    #    arg.timer.set_max_sec(arg[0] + 1)
+    with audio_pb_lock:
+        play(b)
     return
 
 # Retrives audio
 # arg: VWindow
 # t: time in seconds
-def get_audio(arg, t_original):
+def get_audio(args):
     global audio
     global available_audio
     global audio_lock
+    arg = args[0]
+    t_original = args[1]
     # Rounds t
     # Maybe it shouldn't round like this
     t = int(t_original + 0.5)
     if 0 <= t < len(audio):
-        with arg.timer.m_lock:
+        
+        # Delay here.
+        with audio_lock: # **
+            available_audio[t] = (t, audio[t]) # **
+
+        #**with arg.timer.m_lock:
             # Lets the video go further
             # Since audio is required to procede
-            arg.timer.set_max_sec(t + 1)
-            if 0 < arg.m_last_audio:
-                arg.timer.try_start()
+            #**arg.timer.set_max_sec(t + 1)
+            #**if 0 < arg.m_last_audio:
+            #    arg.timer.try_start()
+            
         # A new thread MUST be spawned to play audio
-        thread2 = myThread(play_audio, audio[t])
-        thread2.start()
+        #**thread2 = myThread(play_audio, audio[t])
+        #**thread2.start()
+        # !!! REMOVED !!! Add to Scheduler instead!
     # Return values could be used to indicate success or something
     return True
 
@@ -100,26 +114,37 @@ def scheduler(arg):
     global ready_lock
     global frames_lock
     global audio_lock
+    global audio_pb_lock
     global frames
     global available_frames
     global available_audio
     with ready_lock:
         pass # Wait for ready_lock
     while True:
-       with arg.timer.m_lock:
-           t = arg.timer.get_time()
-           paused = arg.paused
-       if not paused:
-           #print("t - arg.m_last_audio = {}".format(t - arg.m_last_audio))
-           if 1 <= abs(t - arg.m_last_audio):
-               arg.m_last_audio = int(t)
-               get_audio(arg, t)
-           else:
-               get_frame(arg, t)
-       # How frequently the scheduler runs
-       # This could be messed with but should happen at least as frequently as
-       # the frames are needed
-       time.sleep(1/(2*FRAME_RATE))
+        with arg.timer.m_lock:
+            t = arg.timer.get_time()
+            print("new cycle, t = ", t)
+            paused = arg.paused
+        if not paused:
+            #print("t - arg.m_last_audio = {}".format(t - arg.m_last_audio))
+            if 1 <= abs(t - arg.m_last_audio):
+                arg.m_last_audio = int(t)
+                print("Called get_audio, t = ", t)
+                thread3 = myThread(get_audio, [arg, t])
+                thread3.start()
+            else:
+                get_frame(arg, t)
+            with arg.timer.m_lock:
+                arg.timer.set_max_sec(t + 1)
+                if 0 <= arg.m_last_audio and 1 <= abs(t - arg.m_last_played_audio):
+                    arg.m_last_played_audio = int(t)
+                    arg.timer.try_start()
+                    print("Called play audio, t= ", int(t))
+                    thread4 = myThread(play_audio, available_audio[int(t)])
+                    thread4.start()
+        # How frequently the scheduler runs
+        # This could be messed with but should happen at least as frequently as
+        # the frames are needed
     return
 
 # self: VWindow
@@ -156,6 +181,7 @@ def start(self):
         in os.listdir('Audio')
         if os.path.isfile(os.path.join('Audio', filename))
     ])
+    available_audio = [None for i in audio]
     with self.timer.m_lock:
        self.timer.set_end_sec(len(frames) / FRAME_RATE)
     available_frames = [None for i in frames]
@@ -237,3 +263,17 @@ def on_loop(self):
     self.m_root.after(UPDATE_RATE, self.on_loop) # Calls itself to forever
     return
 
+# Description: Non-blocking "with" for locks. This is so that the timer
+# can be lined up with the play_audio stuff, and it doesn't constantly
+# try to get audio.
+# Precondition: None.
+# Postcondition: True is returned if the acquire is available, otherwise
+# false.
+
+def locket(lock):
+    locked = lock.acquire(False)
+    try:
+        yield locked
+    finally:
+        if locked:
+            lock.release()
