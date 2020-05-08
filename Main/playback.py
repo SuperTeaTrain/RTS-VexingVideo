@@ -1,5 +1,5 @@
 try:
-    import os, sys, time, threading
+    import os, sys, time, threading, random
     import tkinter as tk
     from pydub import AudioSegment
     from pydub.playback import play
@@ -14,6 +14,8 @@ except ImportError as error:
 FRAME_RATE = 29.970030
 # The frame rate converted to a period in milliseconds
 UPDATE_RATE = int(1000/FRAME_RATE + 0.5)
+VID_VARIANCE = 30
+AUD_VARIANCE = 90
 
 # Locks threads until everything is ready
 ready_lock = threading.Lock()   
@@ -45,7 +47,9 @@ class myThread(threading.Thread):
 # Adds frame to frame buffer
 # arg: VWindow
 # t: time in seconds
-def get_frame(arg, t):
+def get_frame(args):
+    arg = args[0]
+    t = args[1]
     global ready_lock
     global frames_lock
     global frames
@@ -54,8 +58,13 @@ def get_frame(arg, t):
     # There is always and I-frame at the beginning and every 60 frames
     # Corresponds to indices: 0, 59, 119, ...
     i_frame = max(0, int((frame+1)/60)*60-1)
-    # Adds a frame to the frame buffer
-    # Grabs an i_frame if it was missed
+
+    waittime = random.randint(arg.m_v_vdelay,
+                              arg.m_v_vdelay + VID_VARIANCE)
+    
+    
+    time.sleep(waittime / 1000)
+
     with frames_lock:
         if 0 <= i_frame < len(frames) and available_frames[i_frame] is None:
             available_frames[i_frame] = frames[i_frame]
@@ -90,23 +99,8 @@ def get_audio(args):
     # Maybe it shouldn't round like this
     t = int(t_original + 0.5)
     if 0 <= t < len(audio):
-        
-        # Delay here.
         with audio_lock: # **
             available_audio[t] = (t, audio[t]) # **
-
-        #**with arg.timer.m_lock:
-            # Lets the video go further
-            # Since audio is required to procede
-            #**arg.timer.set_max_sec(t + 1)
-            #**if 0 < arg.m_last_audio:
-            #    arg.timer.try_start()
-            
-        # A new thread MUST be spawned to play audio
-        #**thread2 = myThread(play_audio, audio[t])
-        #**thread2.start()
-        # !!! REMOVED !!! Add to Scheduler instead!
-    # Return values could be used to indicate success or something
     return True
 
 # arg: VWindow
@@ -123,7 +117,6 @@ def scheduler(arg):
     while True:
         with arg.timer.m_lock:
             t = arg.timer.get_time()
-            print("new cycle, t = ", t)
             paused = arg.paused
         if not paused:
             #print("t - arg.m_last_audio = {}".format(t - arg.m_last_audio))
@@ -133,13 +126,14 @@ def scheduler(arg):
                 thread3 = myThread(get_audio, [arg, t])
                 thread3.start()
             else:
-                get_frame(arg, t)
+                thread5 = myThread(get_frame, [arg, t])
+                thread5.start()
             with arg.timer.m_lock:
                 arg.timer.set_max_sec(t + 1)
                 if 0 <= arg.m_last_audio and 1 <= abs(t - arg.m_last_played_audio):
                     arg.m_last_played_audio = int(t)
                     arg.timer.try_start()
-                    print("Called play audio, t= ", int(t))
+                    print("Called play audio, t= ", t)
                     thread4 = myThread(play_audio, available_audio[int(t)])
                     thread4.start()
         # How frequently the scheduler runs
