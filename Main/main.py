@@ -59,7 +59,7 @@ class VVWindow:
         self.m_last_i_frame = -999
         self.m_last_audio = -999
         self.m_last_played_audio = -999
-        self.m_v_vdelay = 0
+        self.m_v_vdelay = tk.IntVar()
         self.paused = True
         self.timer = timer.Timer()
         with self.timer.m_lock:

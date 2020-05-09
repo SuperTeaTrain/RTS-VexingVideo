@@ -28,6 +28,8 @@ audio_lock.acquire()
 audio_pb_lock = threading.Lock()
 audio_pb_lock.acquire()
 
+test_lock = threading.Lock()
+
 frames = []
 available_frames = []
 audio = [] # I will be replcing this, check for usage.
@@ -48,6 +50,8 @@ class myThread(threading.Thread):
 # arg: VWindow
 # t: time in seconds
 def get_frame(args):
+    global test_lock
+    test_lock.acquire()
     arg = args[0]
     t = args[1]
     global ready_lock
@@ -58,20 +62,28 @@ def get_frame(args):
     # There is always and I-frame at the beginning and every 60 frames
     # Corresponds to indices: 0, 59, 119, ...
     i_frame = max(0, int((frame+1)/60)*60-1)
+    delay = arg.m_v_vdelay.get()
 
-    waittime = random.randint(arg.m_v_vdelay,
-                              arg.m_v_vdelay + VID_VARIANCE)
+    waittime = 0
+    if(delay > 0 and delay < VID_VARIANCE):
+        waittime = random.randint(delay,
+                                  delay + VID_VARIANCE)
+    elif(delay > 0):
+        waittime = random.randint(delay - VID_VARIANCE, delay + VID_VARIANCE)
     
-    
+    #with test_lock:
     time.sleep(waittime / 1000)
 
     with frames_lock:
         if 0 <= i_frame < len(frames) and available_frames[i_frame] is None:
             available_frames[i_frame] = frames[i_frame]
+            test_lock.release()
             return
         if 0 <= frame < len(frames) and available_frames[frame] is None:
             available_frames[frame] = frames[frame]
+            test_lock.release()
             return
+    test_lock.release()
     return
 
 def play_audio(arg):
@@ -126,8 +138,9 @@ def scheduler(arg):
                 thread3 = myThread(get_audio, [arg, t])
                 thread3.start()
             else:
-                thread5 = myThread(get_frame, [arg, t])
-                thread5.start()
+                if not test_lock.locked():
+                    thread5 = myThread(get_frame, [arg, t])
+                    thread5.start()
             with arg.timer.m_lock:
                 arg.timer.set_max_sec(t + 1)
                 if 0 <= arg.m_last_audio and 1 <= abs(t - arg.m_last_played_audio):
