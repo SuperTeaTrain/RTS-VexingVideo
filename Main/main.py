@@ -14,7 +14,7 @@ try:
     import pydub as pdb
     import tkinter.filedialog
     import sys
-    from . import playback, timer
+    import playback, timer
 except ImportError as error:
     print("Couldn't load module {}".format(error))
     sys.exit(2)
