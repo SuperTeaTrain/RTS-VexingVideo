@@ -139,6 +139,7 @@ def scheduler(arg):
         # How frequently the scheduler runs
         # This could be messed with but should happen at least as frequently as
         # the frames are needed
+        time.sleep(1/(2*FRAME_RATE))
     return
 
 # self: VWindow
