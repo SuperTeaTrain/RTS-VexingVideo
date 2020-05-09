@@ -8,7 +8,7 @@
 # --- 80 Columns ------------------------------------------------------------- #
 
 try:
-    import os, time
+    import os, time, sys
     import tkinter as tk
     from PIL import ImageTk, Image
     import pydub as pdb
@@ -23,7 +23,6 @@ except ImportError as error:
 # Description: This is the class for the tkinter main window for Vexing Video.
 # it is class, so that it, and all of its modules, may be passed as a whole to 
 # a separate main function.
-
 
 class VVWindow:
     m_root = None # TCL is used in lieu of Tk for ease of use on Linux.
@@ -43,8 +42,6 @@ class VVWindow:
     m_radio_intol = None # Delay Intolerant user selection.
     m_scale_vdelay = None # Delay for video random seed, in ms
     m_v_vdelay = None # The actual value for this
-    m_scale_adelay = None # Delay for audio random seed, in ms.
-    m_v_adelay = None # The actual value for this.
     m_c_width = 800
     m_c_height = 600
     m_menubar = None # Helps to open files and close.
@@ -60,6 +57,10 @@ class VVWindow:
     def __init__(self):
         self.m_root = tk.Tk()
         
+        self.m_last_i_frame = -999
+        self.m_last_audio = -999
+        self.m_last_played_audio = -999
+        self.m_v_vdelay = tk.IntVar()
         self.paused = True
         self.timer = timer.Timer()
         with self.timer.m_lock:
@@ -112,12 +113,6 @@ class VVWindow:
         self.m_scale_vdelay = tk.Scale(self.m_ctrl_frame, orient=tk.HORIZONTAL,
                                        variable=self.m_v_vdelay, from_ = 0, 
                                        to = 100).pack(side=tk.TOP)
-        self.m_label_adelay = tk.Label(self.m_ctrl_frame,
-                                       text="Preferred Audio Delay",
-                                       pady=10).pack(side=tk.TOP)
-        self.m_scale_adelay = tk.Scale(self.m_ctrl_frame, orient=tk.HORIZONTAL,
-                                       variable=self.m_v_adelay, from_ = 0,
-                                       to = 2000).pack(side=tk.TOP)
         self.m_menubar = tk.Menu(self.m_root)
         self.m_menu_file = tk.Menu(self.m_menubar, tearoff=0)
         self.m_menu_file.add_command(label = "Open",
@@ -152,14 +147,12 @@ class VVWindow:
         pass
 
     def _pause(self):
-        print('Called Pause')
         with self.timer.m_lock:
             self.paused = True
             self.timer.pause()
         return
     
     def _play(self):
-        print('Called Play')
         with self.timer.m_lock:
             self.paused = False
             self.timer.try_start()
